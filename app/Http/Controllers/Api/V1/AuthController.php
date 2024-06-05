@@ -32,7 +32,7 @@ class AuthController extends Controller
         /** @var User $user */
         $user = User::create($input);
 
-        $result = self::getToken(User::PASSPORT_CLIENT_NAME, $input['email'], $user->password);
+        $result = self::getToken(User::PASSPORT_CLIENT_NAME, $input['email'], $request->get('password'));
 
         if (!$result->error) {
 
