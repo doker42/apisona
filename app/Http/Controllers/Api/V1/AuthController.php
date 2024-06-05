@@ -7,6 +7,7 @@ use App\Http\Requests\V1\AuthRefreshRequest;
 use App\Http\Requests\V1\LoginRequest;
 use App\Http\Requests\V1\RegisterRequest;
 use App\Http\Resources\V1\UserResource;
+use App\Models\Account;
 use App\Models\User;
 use App\Passport\Traits\AuthPassportTrait;
 use Illuminate\Http\JsonResponse;
@@ -31,6 +32,8 @@ class AuthController extends Controller
         $input['password'] = bcrypt($input['password']);
         /** @var User $user */
         $user = User::create($input);
+
+        Account::create(['user_id' => $user->id]);
 
         $result = self::getToken(User::PASSPORT_CLIENT_NAME, $input['email'], $request->get('password'));
 
