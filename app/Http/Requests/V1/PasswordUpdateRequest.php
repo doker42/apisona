@@ -4,7 +4,6 @@ namespace App\Http\Requests\V1;
 
 use App\Http\Traits\ApiHelperTrait;
 use App\Rules\CheckUpdatePassword;
-use App\Rules\CheckNewPassword;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
@@ -33,8 +32,6 @@ class PasswordUpdateRequest extends FormRequest
     public function rules()
     {
         $user_passsword = auth()->user()->password;
-        $current_password = $this->input('current_password');
-        $new_password = $this->input('new_password');
 
         return [
             'current_password' => [

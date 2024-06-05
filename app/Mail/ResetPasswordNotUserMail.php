@@ -2,7 +2,6 @@
 
 namespace App\Mail;
 
-use App\Helpers\MailUrl;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Mail\Mailable;
