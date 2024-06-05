@@ -9,8 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Illuminate\Database\Eloquent\Model;
 
-class PlanRange extends AbstractModel
+
+class PlanRange extends Model
 {
     use HasFactory, SoftDeletes;
 
