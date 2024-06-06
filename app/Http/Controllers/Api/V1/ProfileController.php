@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Events\UserEmailUpdateEvent;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\V1\PasswordUpdateRequest;
+use App\Http\Requests\V1\UserUpdateRequest;
 use App\Http\Resources\V1\UserResource;
 use App\Http\Traits\ApiHelperTrait;
 use App\Mail\ResetPasswordNotUserMail;
@@ -16,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -43,6 +46,65 @@ class ProfileController extends Controller
             'message' => __("User hasn't been found")
         ], 404);
     }
+
+
+
+    /**
+     * @param UserUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function update(UserUpdateRequest $request)
+    {
+        /** @var User $user */
+        $user = auth()->user();
+        $updated_user = $request->validated();
+
+        DB::beginTransaction();
+
+        try {
+
+            if (!empty($updated_user['email'])) {
+                if ($user->email !== $updated_user['email']) {
+                    $emailSet = EmailSet::addRequest($user, $updated_user['email']);
+                    if ($emailSet) {
+                        event(new UserEmailUpdateEvent($user, $emailSet));
+                    }else{
+                        $warnings['email'] = __('You already requested change email to :email. Please approve this request or try again later.', ['email' => $updated_user['email']]);
+                    }
+                    unset($updated_user['email']);
+                }
+            }
+
+            if (array_key_exists('new_password', $updated_user) && !is_null($updated_user['new_password'])) {
+                $updated_user['password'] = Hash::make($request->new_password);
+            }
+
+            $user->update($updated_user);
+
+            DB::commit();
+
+            $response = [
+                'user' => new UserResource($user),
+                'locales' => Helper::locales($user->language),
+                'message' => __('Your data has been successfully updated.'),
+            ];
+
+            if(!empty($warnings)){
+                $response['warnings'] = $warnings;
+            }
+
+            return response()->json($response);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            Log::info('User update profile Error : ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'message' => __('Failed to change your data. Please, try again.')
+        ], 500);
+    }
+
 
 
     /**
