@@ -2,9 +2,12 @@
 
 namespace App\Http\Controllers\Api\V1;
 
+use App\Common\Avatar;
+use App\CommonClasses\ImagePublicUploader;
 use App\Events\UserEmailUpdateEvent;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\V1\AvatarUpdateRequest;
 use App\Http\Requests\V1\PasswordUpdateRequest;
 use App\Http\Requests\V1\UserUpdateRequest;
 use App\Http\Resources\V1\UserResource;
@@ -68,7 +71,8 @@ class ProfileController extends Controller
                     $emailSet = EmailSet::addRequest($user, $updated_user['email']);
                     if ($emailSet) {
                         event(new UserEmailUpdateEvent($user, $emailSet));
-                    }else{
+                    }
+                    else{
                         $warnings['email'] = __('You already requested change email to :email. Please approve this request or try again later.', ['email' => $updated_user['email']]);
                     }
                     unset($updated_user['email']);
@@ -293,6 +297,79 @@ class ProfileController extends Controller
         return response()->json([
             'message'=> __('Your password has been reset!'),
         ], 200);
+    }
+
+
+
+    /**
+     * @return JsonResponse
+     */
+    public function showAvatar()
+    {
+        $user = auth()->user();
+
+        return response()->json([
+            'avatar' => Avatar::getThumbnails($user->avatar, array_keys(config('images.profile.avatar')))
+        ], 200);
+    }
+
+
+    /**
+     * @param AvatarUpdateRequest $request
+     * @return JsonResponse
+     */
+    public function updateAvatar(AvatarUpdateRequest $request): JsonResponse
+    {
+        $user = auth()->user();
+        $avatar_name = null;
+        $old_avatar_name = $user->avatar;
+
+        if ($request->avatar) {
+            /* store new avatars */
+            $avatar_name = Avatar::store($request->avatar, config('images.profile.avatar'));
+        }
+
+        if ($avatar_name && $user->update(['avatar' => $avatar_name])) {
+            /* remove old avatars */
+            if ($old_avatar_name) {
+                Avatar::deleteImages($old_avatar_name, Avatar::DIR_AVATARS, config('images.profile.avatar'));
+            }
+
+            return response()->json([
+                'message' => __('Avatar has been successfully updated.'),
+                'avatar' => Avatar::getThumbnails($user->avatar, array_keys(config('images.profile.avatar')))
+            ], 200);
+        }
+
+        return response()->json([
+            'message' => __('Failed to update avatar.')
+        ], 500);
+    }
+
+
+    /**
+     * @return JsonResponse
+     */
+    public function deleteAvatar(): JsonResponse
+    {
+        $user = auth()->user();
+
+        $avatar = $user?->avatar;
+
+        if ($avatar) {
+            Avatar::deleteImages($user->avatar, Avatar::DIR_AVATARS, config('images.profile.avatar'));
+            $user->update(['avatar' => null]);
+
+            return response()->json([
+                'message' => __('Your avatar has been successfully deleted.'),
+            ], 200);
+        }
+        else {
+
+            return response()->json([
+                'message' => __('No avatar.'),
+            ], 422);
+        }
     }
 
 }

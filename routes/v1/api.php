@@ -27,7 +27,12 @@ Route::group([
         Route::group(['prefix' => 'profile'], function(){
             Route::put('/password', 'updatePassword');
             Route::get('/', 'show');
+
+            Route::delete('/avatar', 'deleteAvatar');
+            Route::post('/avatar', 'updateAvatar');
+            Route::get('/avatar', 'showAvatar');
         });
+
     });
 
 });
