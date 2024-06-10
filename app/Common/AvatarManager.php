@@ -2,14 +2,12 @@
 
 namespace App\Common;
 
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
-use Intervention\Image\ImageManager;
 use Intervention\Image\Drivers\Gd\Driver;
+use Intervention\Image\ImageManager;
 
-class Avatar
+class AvatarManager
 {
+    use UploadTrait;
     public const IMAGE_ORIGIN = 'origin';
     public const IMAGE_BIG    = 'big';
     public const IMAGE_SMALL  = 'small';
@@ -17,29 +15,14 @@ class Avatar
     public const DIR_AVATARS = '/avatars';
 
 
-    /**
-     * @param UploadedFile $file
-     * @return string
-     */
-    public static function createFileName(UploadedFile $file): string
-    {
-        $ext = $file->getClientOriginalExtension();
-        $hash = md5(Str::random(10) . time());
+    public StorageLocalPublic $storage;
 
-        return $hash . '.' . $ext;
+    public function __construct(StorageLocalPublic $storage)
+    {
+        $this->storage = $storage;
     }
 
 
-    /**
-     * @param string $filename
-     * @return bool
-     */
-    public static function ifExtensionSvg(string $filename): bool
-    {
-        $ext = explode('.', $filename);
-
-        return isset($ext[1]) && $ext[1] == self::EXT_SVG;
-    }
 
 
     /**
@@ -47,15 +30,15 @@ class Avatar
      * @param $sizes
      * @return string|null
      */
-    public static function store($image, $sizes = null): string|null
+    public function store($image, $sizes = null): string|null
     {
         $filename = self::createFileName($image);
 
-        $result = Storage::disk('public')->putFileAs(self::DIR_AVATARS, $image, $filename);
+        $result = $this->storage->putAs(self::DIR_AVATARS, $image, $filename);
 
         if (!self::ifExtensionSvg($filename) && $filename && $sizes) {
 
-            $res = self::generateThumbnails($image, $filename, $sizes);
+            $res = $this->generateThumbnails($image, $filename, $sizes);
 
             return count($res) == count($sizes) ? $filename : null;
         }
@@ -64,13 +47,16 @@ class Avatar
     }
 
 
+
+
+
     /**
      * @param $image
      * @param $filename
      * @param $size
      * @return string|null
      */
-    public static function reduceAndStore($image, $filename, $size): string|null
+    public function reduceAndStore($image, $filename, $size): string|null
     {
         $imageManager = new ImageManager(new Driver());
         $image = $imageManager->read($image->path());
@@ -79,10 +65,13 @@ class Avatar
         $path = $temp_dir . '/' . $filename;
 
         $image->save($path);
-        Storage::disk('public')->putFileAs(self::DIR_AVATARS, $path, $filename);
+        $this->storage->putAs(self::DIR_AVATARS, $path, $filename);
 
         return $filename;
     }
+
+
+
 
 
     /**
@@ -91,17 +80,18 @@ class Avatar
      * @param $sizes
      * @return array
      */
-    private static function generateThumbnails($image, $filename, $sizes): array
+    private function generateThumbnails($image, $filename, $sizes): array
     {
         $res = [];
         /* reduce and store */
         foreach($sizes as $key => $value) {
             $cover_filename = $key . '_' . $filename;
-            $res[] = self::reduceAndStore($image, $cover_filename, $value);
+            $res[] = $this->reduceAndStore($image, $cover_filename, $value);
         }
 
         return $res;
     }
+
 
 
     /**
@@ -110,7 +100,7 @@ class Avatar
      * @param $sizes
      * @return void
      */
-    public static function deleteImages($filename, string $dir=null, $sizes=null): void
+    public function deleteAll($filename, string $dir=null, $sizes=null): void
     {
         if($filename){
             $images_names = [$filename];
@@ -124,13 +114,14 @@ class Avatar
                         $item = $dir . '/' . $item;
                     }
 
-                    self::delete($item);
+                    $this->delete($item);
                 }
             } else {
-                self::delete($filename);
+                $this->delete($filename);
             }
         }
     }
+
 
 
     /**
@@ -139,11 +130,9 @@ class Avatar
      * @param $filename
      * @return void
      */
-    public static function delete($filename): void
+    public function delete($filename): void
     {
-        if (Storage::disk('public')->exists($filename)){
-            Storage::disk('public')->delete($filename);
-        }
+        $this->storage->delete($filename);
     }
 
 
@@ -152,16 +141,16 @@ class Avatar
      * @param array|null $sizes
      * @return null[]
      */
-    public static function getThumbnails($name, array $sizes = null): array
+    public function getThumbnails($name, array $sizes = null): array
     {
         $res = [
-            'origin' => $name ? self::url($name) : null
+            'origin' => $name ? $this->url($name) : null
         ];
 
         if ($sizes) {
             foreach ($sizes as $size) {
                 $res += [
-                    $size => $name ? (self::ifExtensionSvg($name) ?  self::url($name) : self::url($size . '_' . $name)) : null
+                    $size => $name ? ($this->ifExtensionSvg($name) ?  self::url($name) : self::url($size . '_' . $name)) : null
                 ];
             }
         }
@@ -174,7 +163,7 @@ class Avatar
      * @param $fileName
      * @return string
      */
-    public static  function url($fileName): string
+    public function url($fileName): string
     {
         return asset('storage' .  self::DIR_AVATARS . '/' . $fileName);
     }

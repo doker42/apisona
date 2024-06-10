@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers\Api\V1;
 
-use App\Common\Avatar;
-use App\CommonClasses\ImagePublicUploader;
+use App\Common\AvatarManager;
+use App\Common\StorageLocalPublic;
 use App\Events\UserEmailUpdateEvent;
 use App\Helpers\Helper;
 use App\Http\Controllers\Controller;
@@ -29,6 +29,13 @@ use Illuminate\Support\Str;
 class ProfileController extends Controller
 {
     use ApiHelperTrait;
+
+    public AvatarManager $manager;
+
+    public function __construct(StorageLocalPublic $storage)
+    {
+        $this->manager = new AvatarManager($storage);
+    }
 
     /**
      * @return JsonResponse
@@ -309,7 +316,7 @@ class ProfileController extends Controller
         $user = auth()->user();
 
         return response()->json([
-            'avatar' => Avatar::getThumbnails($user->avatar, array_keys(config('images.profile.avatar')))
+            'avatar' => $this->manager->getThumbnails($user->avatar, array_keys(config('images.profile.avatar')))
         ], 200);
     }
 
@@ -326,18 +333,19 @@ class ProfileController extends Controller
 
         if ($request->avatar) {
             /* store new avatars */
-            $avatar_name = Avatar::store($request->avatar, config('images.profile.avatar'));
+            $avatar_name = $this->manager->store($request->avatar, config('images.profile.avatar'));
         }
 
         if ($avatar_name && $user->update(['avatar' => $avatar_name])) {
             /* remove old avatars */
             if ($old_avatar_name) {
-                Avatar::deleteImages($old_avatar_name, Avatar::DIR_AVATARS, config('images.profile.avatar'));
+                $this->manager->deleteAll($old_avatar_name, AvatarManager::DIR_AVATARS, config('images.profile.avatar'));
             }
 
             return response()->json([
                 'message' => __('Avatar has been successfully updated.'),
-                'avatar' => Avatar::getThumbnails($user->avatar, array_keys(config('images.profile.avatar')))
+                'avatar' => $this->manager->getThumbnails($user->avatar, array_keys(config('images.profile.avatar')))
+
             ], 200);
         }
 
@@ -357,7 +365,9 @@ class ProfileController extends Controller
         $avatar = $user?->avatar;
 
         if ($avatar) {
-            Avatar::deleteImages($user->avatar, Avatar::DIR_AVATARS, config('images.profile.avatar'));
+            $this->manager->deleteAll($user->avatar, AvatarManager::DIR_AVATARS, config('images.profile.avatar'));
+
+
             $user->update(['avatar' => null]);
 
             return response()->json([
