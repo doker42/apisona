@@ -32,6 +32,7 @@ class ProfileController extends Controller
 
     public AvatarManager $manager;
 
+
     public function __construct(StorageLocalPublic $storage)
     {
         $this->manager = new AvatarManager($storage);
