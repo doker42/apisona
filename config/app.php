@@ -191,6 +191,8 @@ return [
 
         Laravel\Passport\PassportServiceProvider::class,
 
+//        Elastic\Elasticsearch\ClientServiceProvider::class,
+
     ])->toArray(),
 
     /*
@@ -206,6 +208,8 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         // 'Example' => App\Facades\Example::class,
+
+//        'Elasticsearch' => Elastic\Elasticsearch\ClientBuilder::class,
     ])->toArray(),
 
 ];

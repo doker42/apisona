@@ -1,9 +1,27 @@
 <?php
 
+use App\Http\Controllers\Api\V1\ArticleController;
 use App\Http\Controllers\Api\V1\AuthController;
+use App\Http\Controllers\Api\V1\PostController;
 use App\Http\Controllers\Api\V1\ProfileController;
 use Illuminate\Support\Facades\Route;
 
+
+Route::controller(PostController::class)->group(function () {
+    Route::group(['prefix' => 'posts'], function(){
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+    });
+});
+
+Route::controller(ArticleController::class)->group(function () {
+    Route::group(['prefix' => 'articles'], function(){
+        Route::get('/', 'index');
+        Route::post('/', 'store');
+
+        Route::get('/search', 'search');
+    });
+});
 
 
 Route::group([

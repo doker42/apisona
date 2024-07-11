@@ -3,6 +3,11 @@
 namespace App\Providers;
 
 use App\Helpers\Mail as MailHelp;
+use App\Search\Article\ElasticsearchRepository;
+use App\Search\Article\EloquentSearchRepository;
+use App\Search\Article\SearchRepository;
+use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\ClientBuilder;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\ServiceProvider;
 
@@ -13,7 +18,30 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(SearchRepository::class, function () {
+            // This is useful in case we want to turn-off our
+            // search cluster or when deploying the search
+            // to a live, running application at first.
+            if (! config('services.search.enabled')) {
+                return new EloquentSearchRepository();
+            }
+
+            return new ElasticsearchRepository(
+                $this->app->make(Client::class)
+            );
+        });
+
+        $this->bindSearchClient();
+    }
+
+
+    private function bindSearchClient()
+    {
+        $this->app->bind(Client::class, function ($app) {
+            return ClientBuilder::create()
+                ->setHosts($app['config']->get('services.search.hosts'))
+                ->build();
+        });
     }
 
     /**
