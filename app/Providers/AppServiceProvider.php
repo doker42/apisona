@@ -5,7 +5,7 @@ namespace App\Providers;
 use App\Helpers\Mail as MailHelp;
 use App\Search\Article\ElasticsearchRepository;
 use App\Search\Article\EloquentSearchRepository;
-use App\Search\Article\SearchRepository;
+use App\Search\SearchRepository;
 use Elastic\Elasticsearch\Client;
 use Elastic\Elasticsearch\ClientBuilder;
 use Illuminate\Support\Facades\Mail;
@@ -40,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(Client::class, function ($app) {
             return ClientBuilder::create()
                 ->setHosts($app['config']->get('services.search.hosts'))
+                ->setBasicAuthentication(env('ELASTIC_BA_USERNAME', 'elastic'), env('ELASTIC_BA_PASSWORD', 'password'))
                 ->build();
         });
     }

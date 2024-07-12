@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Search\Article;
+namespace App\Search\Post;
 
-use App\Models\Article;
+use App\Models\Post;
 use App\Search\SearchRepository;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
@@ -11,9 +11,9 @@ class EloquentSearchRepository implements SearchRepository
 {
     public function search(string $term): Collection
     {
-        $items = Article::query()
+        $items = Post::query()
             ->where(fn ($query) => (
-            $query->where('body', 'LIKE', "%{$term}%")
+            $query->where('content', 'LIKE', "%{$term}%")
                 ->orWhere('title', 'LIKE', "%{$term}%")
             ))
             ->get();
@@ -26,9 +26,9 @@ class EloquentSearchRepository implements SearchRepository
     {
         $ids = Arr::pluck($items, 'id');
 
-        return Article::findMany($ids)
-            ->sortBy(function ($article) use ($ids) {
-                return array_search($article->getKey(), $ids);
+        return Post::findMany($ids)
+            ->sortBy(function ($post) use ($ids) {
+                return array_search($post->getKey(), $ids);
             });
     }
 }

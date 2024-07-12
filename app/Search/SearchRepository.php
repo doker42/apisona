@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Search\Article;
+namespace App\Search;
 
 use Illuminate\Database\Eloquent\Collection;
 

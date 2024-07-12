@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
-use App\Search\Article\SearchRepository;
+use App\Search\SearchRepository;
 use Illuminate\Http\Request;
 
 class ArticleController extends Controller

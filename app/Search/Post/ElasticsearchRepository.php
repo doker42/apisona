@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Search\Article;
+namespace App\Search\Post;
 
 use App\Models\Article;
+use App\Models\Post;
 use App\Search\SearchRepository;
 use Elastic\Elasticsearch\Client;
 use Illuminate\Database\Eloquent\Collection;
@@ -32,7 +33,7 @@ class ElasticsearchRepository implements SearchRepository
 
     private function searchOnElasticsearch(string $query = ''): array
     {
-        $model = new Article;
+        $model = new Post;
 
         $items = $this->elasticsearch->search([
             'index' => $model->getIndex(),
@@ -40,7 +41,7 @@ class ElasticsearchRepository implements SearchRepository
             'body' => [
                 'query' => [
                     'multi_match' => [
-                        'fields'  => ['title^5', 'body', 'tags'],
+                        'fields'  => ['title^5', 'content'],
                         'query'   => $query,
                     ],
                 ],
@@ -55,7 +56,7 @@ class ElasticsearchRepository implements SearchRepository
     {
         $ids = Arr::pluck($items['hits']['hits'], '_id');
 
-        return Article::findMany($ids)
+        return Post::findMany($ids)
             ->sortBy(function ($article) use ($ids) {
                 return array_search($article->getKey(), $ids);
             });
