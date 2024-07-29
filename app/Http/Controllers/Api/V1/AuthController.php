@@ -20,6 +20,12 @@ class AuthController extends Controller
 {
     use AuthPassportTrait;
 
+
+    public function __construct()
+    {
+        $this->middleware('auth:api')->except('register', 'login', 'refresh');
+    }
+
     /**
      * @param RegisterRequest $request
      * @return JsonResponse
@@ -71,9 +77,11 @@ class AuthController extends Controller
 
                 $user = Auth::user();
 
+
                 if ($user) {
 
                     $result = self::getToken(User::PASSPORT_CLIENT_NAME, $credentials['email'], $credentials['password'], $remember);
+
 
                     if (!$result->error) {
 
